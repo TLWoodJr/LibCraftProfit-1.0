@@ -1,0 +1,4 @@
+<!-- What an addon embedding LibCraftProfit-1.0 includes (it must load LibStub and CallbackHandler-1.0 first). -->
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+  <Script file="LibCraftProfit-1.0.lua"/>
+</Ui>

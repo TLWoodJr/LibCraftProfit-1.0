@@ -1,0 +1,12 @@
+## Interface: 120100, 16001, 50504, 38000, 20506, 11508, 11509
+## Title: Lib: CraftProfit-1.0
+## Notes: Crafting cost and profit from Auctionator's prices. Shared by ProfessionProfit and RecipeProfit.
+## Author: woodt
+## Version: @project-version@
+## Category-enUS: Libraries
+## X-Category: Library
+## Dependencies: Auctionator
+
+Libs\LibStub\LibStub.lua
+Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+lib.xml
