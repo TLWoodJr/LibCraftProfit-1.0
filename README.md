@@ -37,3 +37,7 @@ Libs\LibCraftProfit-1.0\lib.xml
 
 Clone this repo into `Interface/AddOns/LibCraftProfit-1.0`. It loads as its own addon, before the addons that list it in
 `OptionalDeps`, and LibStub keeps the copy with the highest `MINOR` - so bump `MINOR` with every change you push.
+
+## Licence
+
+GPL-3.0. See [LICENSE](LICENSE).

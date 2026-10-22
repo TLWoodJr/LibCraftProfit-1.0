@@ -1,8 +1,9 @@
 ## Interface: 120100, 16001, 50504, 38000, 20506, 11508, 11509
 ## Title: Lib: CraftProfit-1.0
 ## Notes: Crafting cost and profit from Auctionator's prices. Shared by ProfessionProfit and RecipeProfit.
-## Author: woodt
+## Author: magnumwood
 ## Version: @project-version@
+## X-License: GPL-3.0
 ## Category-enUS: Libraries
 ## X-Category: Library
 ## Dependencies: Auctionator
