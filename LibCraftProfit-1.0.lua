@@ -6,10 +6,14 @@
 --   { made = n, productID = itemID | nil,
 --     reagents = { { id = itemID | nil, count = n, name = string | nil }, ... } }
 --
+-- Pricing and searching take opts.noVendor: treat vendor-sold items like
+-- any other (price them from the AH, search for them) - for players who'd
+-- rather not visit a vendor. By default a vendor's price always wins.
+--
 -- Callbacks (lib.RegisterCallback(owner, event, handler)):
 --   "PricesUpdated"  AH results came in (Auctionator has stored new prices).
 
-local MAJOR, MINOR = "LibCraftProfit-1.0", 3
+local MAJOR, MINOR = "LibCraftProfit-1.0", 4
 local lib = LibStub:NewLibrary(MAJOR, MINOR)
 if not lib then return end
 
@@ -83,9 +87,15 @@ function lib.StaleText(days)
   return (days > 21 and "over 21" or days) .. " days old"
 end
 
+-- A vendor's price, unless opts.noVendor.
+local function vendorPrice(itemID, opts)
+  if opts and opts.noVendor then return nil end
+  return lib.VendorPrice(itemID)
+end
+
 -- What one unit of a reagent costs to buy: price, "vendor" | "AH".
-function lib.BuyPrice(itemID)
-  local vendor = lib.VendorPrice(itemID)
+function lib.BuyPrice(itemID, opts)
+  local vendor = vendorPrice(itemID, opts)
   if vendor then return vendor, "vendor" end
   local ah = lib.AHPrice(itemID)
   if ah then return ah, "AH" end
@@ -156,8 +166,8 @@ end
 -- cheapest price, when there's no recent book); info.short = true when the
 -- book doesn't list that many (the rest is priced at its dearest listing).
 -- nil when there's no price at all, or a recent book shows none for sale.
-function lib.BuyCost(itemID, quantity)
-  local vendor = lib.VendorPrice(itemID)
+function lib.BuyCost(itemID, quantity, opts)
+  local vendor = vendorPrice(itemID, opts)
   if vendor then return vendor * quantity, { src = "vendor" } end
   local book = lib.Book(itemID)
   if book then
@@ -203,14 +213,14 @@ end
 -- shortCount, undercut (a reagent is undercut), sell, productStale (days),
 -- productUndercut, profit (exact copper, for all calculations),
 -- displayProfit (Auctionator's rounding, for showing beside Auctionator),
--- margin (profit / cost), incomplete. Returns the recipe.
-function lib.Evaluate(recipe, crafts)
+-- margin (profit / cost), incomplete. opts: noVendor. Returns the recipe.
+function lib.Evaluate(recipe, crafts, opts)
   crafts = crafts or 1
   local cost, missing, staleCount, shortCount, undercut = 0, 0, 0, 0, false
   for _, reagent in ipairs(recipe.reagents) do
     local total, info
     local amount = reagent.count * crafts
-    if reagent.id then total, info = lib.BuyCost(reagent.id, amount) end
+    if reagent.id then total, info = lib.BuyCost(reagent.id, amount, opts) end
     reagent.price = total and total / amount or nil
     reagent.src = info and info.src
     reagent.short = info and info.short
@@ -255,7 +265,7 @@ end
 -- multi-search (results show in its Shopping tab). Skips vendor-sold items
 -- (their vendor price is always used) and, unless opts.force, items already
 -- seen today. items: { { id = itemID | nil, name = itemName }, ... }.
--- opts.caller: your addon's name. Returns how many names were searched, or
+-- opts.caller: your addon's name; opts.noVendor: search vendor-sold too. Returns how many names were searched, or
 -- nil + reason.
 function lib.Search(items, opts)
   opts = opts or {}
@@ -267,7 +277,7 @@ function lib.Search(items, opts)
     local name = item.name
     -- Auctionator rejects terms with ; or ^ in them.
     if name and name ~= "" and not name:find("[;^\"]") and not seen[name] then
-      local skip = item.id and (lib.VendorPrice(item.id) or (not opts.force and lib.PriceAge(item.id) == 0))
+      local skip = item.id and (vendorPrice(item.id, opts) or (not opts.force and lib.PriceAge(item.id) == 0))
       if not skip then
         seen[name] = true
         names[#names + 1] = name
@@ -361,7 +371,8 @@ end
 
 -- Records the order book of each item, by commodity search (skips vendor-
 -- sold items and ones that don't stack, which aren't commodities). Needs the
--- AH open. opts.onProgress(done, total), opts.onDone(reason, done, total),
+-- AH open (opts.noVendor: vendor-sold ones too). opts.onProgress(done,
+-- total), opts.onDone(reason, done, total),
 -- reason "done" | "closed" | "cancelled". Returns the number of items to
 -- search, or nil + reason.
 function lib.ScanBooks(itemIDs, opts)
@@ -374,7 +385,7 @@ function lib.ScanBooks(itemIDs, opts)
   local queue, seen = {}, {}
   for _, id in ipairs(itemIDs) do
     local maxStack = select(8, (C_Item and C_Item.GetItemInfo or GetItemInfo)(id))
-    if id and not seen[id] and not lib.VendorPrice(id) and (maxStack or 2) > 1 then
+    if id and not seen[id] and not vendorPrice(id, opts) and (maxStack or 2) > 1 then
       seen[id] = true
       queue[#queue + 1] = id
     end
